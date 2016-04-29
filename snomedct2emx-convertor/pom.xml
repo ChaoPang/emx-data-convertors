@@ -7,14 +7,42 @@
     <artifactId>data-convertor</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>org.molgenis</groupId>
   <artifactId>snomedct2emx-convertor</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
   <name>snomedct2emx-convertor</name>
   <url>http://maven.apache.org</url>
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+  <build>
+      <finalName>SnomedCT2EmxConvertor</finalName>
+      <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>2.3</version>
+            <executions>
+               <execution>
+                  <phase>package</phase>
+                  <goals>
+                     <goal>shade</goal>
+                  </goals>
+                  <configuration>
+                     <artifactSet>
+                        <includes>
+                           <include>*</include>
+                        </includes>
+                     </artifactSet>
+                     <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                           <mainClass>snmoedct2emx.convertor.io.SnomdCTToEMXConvertor</mainClass>
+                        </transformer>
+                     </transformers>
+                  </configuration>
+               </execution>
+            </executions>
+         </plugin>
+      </plugins>
+   </build>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>

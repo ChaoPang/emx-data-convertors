@@ -10,11 +10,14 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.molgenis.data.Entity;
 import org.molgenis.data.csv.CsvRepository;
 import org.molgenis.data.support.UuidGenerator;
+
+import com.google.common.collect.Sets;
 
 import snmoedct2emx.convertor.beans.IdentifiableNodePath;
 import snmoedct2emx.convertor.beans.SnomedCTSubClassRelation;
@@ -48,8 +51,8 @@ public class SnomeCTConceptRelationRepo implements Closeable
 		csvRepository = new CsvRepository(file, null, '\t');
 		Map<String, Set<String>> relationMapping = loadFromRepository();
 		System.out.println("Starting to compute the nodePath...");
-		recursivelyCreateNodePath(new AtomicInteger(0), "", findTopNodes(relationMapping), true, relationMapping,
-				nodePathMapping);
+		recursivelyCreateNodePath(new AtomicInteger(0), StringUtils.EMPTY, findTopNodes(relationMapping), true,
+				relationMapping, nodePathMapping);
 		System.out.println("Finished to compute the nodePath...");
 	}
 
@@ -57,10 +60,9 @@ public class SnomeCTConceptRelationRepo implements Closeable
 			boolean isRoot, Map<String, Set<String>> relationMapping,
 			Map<String, Set<IdentifiableNodePath>> nodePathMapping)
 	{
-		int index = 0;
 		for (String conceptId : conceptIds)
 		{
-			String nodePath = constructNodePath(parentNodePath, index);
+			String nodePath = constructNodePath(parentNodePath, conceptId);
 			if (relationMapping.containsKey(conceptId))
 			{
 				recursivelyCreateNodePath(counter, nodePath, relationMapping.get(conceptId), false, relationMapping,
@@ -71,31 +73,21 @@ public class SnomeCTConceptRelationRepo implements Closeable
 				nodePathMapping.put(conceptId, new LinkedHashSet<IdentifiableNodePath>());
 			}
 			nodePathMapping.get(conceptId).add(new IdentifiableNodePath(uuidGenerator.generateId(), isRoot, nodePath));
-			index++;
 			if (counter.incrementAndGet() % 5000 == 0)
 			{
 				System.out.println("INFO:" + counter.get() + " is_a relations have been loaded...");
 			}
-
 		}
 	}
 
 	public static Set<String> findTopNodes(Map<String, Set<String>> relationMapping)
 	{
-		Set<String> allChildren = new HashSet<String>();
-		for (Set<String> setOfChilren : relationMapping.values())
-		{
-			allChildren.addAll(setOfChilren);
-		}
-		Set<String> topParents = new LinkedHashSet<String>();
+		Set<String> allChildren = relationMapping.values().stream().flatMap(values -> values.stream())
+				.collect(Collectors.toSet());
 
-		for (String parent : relationMapping.keySet())
-		{
-			if (!allChildren.contains(parent))
-			{
-				topParents.add(parent);
-			}
-		}
+		Set<String> topParents = Sets.newLinkedHashSet(relationMapping.keySet().stream()
+				.filter(parent -> !allChildren.contains(parent)).collect(Collectors.toList()));
+
 		return topParents;
 	}
 
@@ -150,12 +142,11 @@ public class SnomeCTConceptRelationRepo implements Closeable
 		return relations.values();
 	}
 
-	private static String constructNodePath(String parentNodePath, int currentPosition)
+	private static String constructNodePath(String parentNodePath, String currentConceptId)
 	{
 		StringBuilder nodePathStringBuilder = new StringBuilder();
 		if (!StringUtils.isEmpty(parentNodePath)) nodePathStringBuilder.append(parentNodePath).append('.');
-		nodePathStringBuilder.append(currentPosition).append('[')
-				.append(nodePathStringBuilder.toString().split("\\.").length - 1).append(']');
+		nodePathStringBuilder.append(currentConceptId);
 		return nodePathStringBuilder.toString();
 	}
 
@@ -166,7 +157,7 @@ public class SnomeCTConceptRelationRepo implements Closeable
 
 	public Set<IdentifiableNodePath> getNodePathObject(String conceptId)
 	{
-		return nodePathMapping.containsKey(conceptId) ? nodePathMapping.get(conceptId) : Collections
-				.<IdentifiableNodePath> emptySet();
+		return nodePathMapping.containsKey(conceptId) ? nodePathMapping.get(conceptId)
+				: Collections.<IdentifiableNodePath> emptySet();
 	}
 }

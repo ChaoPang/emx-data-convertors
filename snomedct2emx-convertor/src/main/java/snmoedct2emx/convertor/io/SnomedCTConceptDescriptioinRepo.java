@@ -1,9 +1,10 @@
 package snmoedct2emx.convertor.io;
 
+import static java.util.Collections.emptySet;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,8 +48,7 @@ public class SnomedCTConceptDescriptioinRepo implements Closeable
 
 	public Set<SnomedCTDescription> getSynonyms(String conceptId)
 	{
-		return cachedConceptSynonymMap.containsKey(conceptId) ? cachedConceptSynonymMap.get(conceptId) : Collections
-				.<SnomedCTDescription> emptySet();
+		return cachedConceptSynonymMap.containsKey(conceptId) ? cachedConceptSynonymMap.get(conceptId) : emptySet();
 	}
 
 	private void loadFromRepository()
@@ -63,8 +63,8 @@ public class SnomedCTConceptDescriptioinRepo implements Closeable
 			{
 				cachedConceptSynonymMap.put(entity.getString(CONCEPT_ID), new HashSet<SnomedCTDescription>());
 			}
-			cachedConceptSynonymMap.get(entity.getString(CONCEPT_ID)).add(
-					new SnomedCTDescription(entity.getString(ID), entity.getString(CONCEPT_ID),
+			cachedConceptSynonymMap.get(entity.getString(CONCEPT_ID))
+					.add(new SnomedCTDescription(entity.getString(ID), entity.getString(CONCEPT_ID),
 							entity.getInt(ACTIVE) == 1, entity.getString(TYPE_ID), entity.getString(TERM)));
 			count++;
 			if (count % 5000 == 0)
