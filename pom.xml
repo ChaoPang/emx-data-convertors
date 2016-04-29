@@ -113,9 +113,10 @@
 	</dependency>
   </dependencies>
   <modules>
-  	<module>finnish2emx-convertor</module>
+    <module>finnish2emx-convertor</module>
     <module>opal2emx-convertor</module>
     <module>snomedct2emx-convertor</module>
     <module>umls2emx-convertor</module>
+    <module>sorta2emx-convertor</module>
   </modules>
 </project>
