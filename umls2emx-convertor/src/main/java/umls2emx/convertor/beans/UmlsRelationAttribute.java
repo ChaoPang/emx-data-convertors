@@ -3,7 +3,6 @@ package umls2emx.convertor.beans;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
-import org.molgenis.umls.beans.AutoValue_UmlsRelationAttribute;
 
 import com.google.auto.value.AutoValue;
 

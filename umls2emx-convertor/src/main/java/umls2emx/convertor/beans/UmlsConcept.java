@@ -2,16 +2,15 @@ package umls2emx.convertor.beans;
 
 import java.util.List;
 
-import org.molgenis.umls.beans.AutoValue_UmlsConcept;
-
 import com.google.auto.value.AutoValue;
 
 @AutoValue
 public abstract class UmlsConcept
 {
-	public static UmlsConcept create(String cuiId, String preferredName, List<UmlsAtom> conceptAtoms)
+	public static UmlsConcept create(String cuiId, String preferredName, List<UmlsAtom> conceptAtoms,
+			List<Synonym> synonmys)
 	{
-		return new AutoValue_UmlsConcept(cuiId, preferredName, conceptAtoms);
+		return new AutoValue_UmlsConcept(cuiId, preferredName, conceptAtoms, synonmys);
 	}
 
 	public abstract String getCuiId();
@@ -19,4 +18,6 @@ public abstract class UmlsConcept
 	public abstract String getPreferredName();
 
 	public abstract List<UmlsAtom> getConceptAtoms();
+
+	public abstract List<Synonym> getSynonyms();
 }

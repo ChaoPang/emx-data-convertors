@@ -5,5 +5,6 @@ import java.io.File;
 public interface UmlsConvertor
 {
 	abstract void convert(File inputFile, File umlsConceptRelationFile, File umlsConceptHierachyFile,
-			File umlsConceptFile, boolean includeAnnotation);
+			File umlsConceptFile, File umlsSemanticTypeFile, File umlsConceptSemanticTypeFile,
+			boolean includeAnnotation);
 }

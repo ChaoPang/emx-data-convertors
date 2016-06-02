@@ -20,6 +20,8 @@ public class Main
 	private final static String CONCEPT_FILE_NAME = "MRCONSO.RRF";
 	private final static String CONCEPT_HIERACHY_FILE_NAME = "MRHIER.RRF";
 	private final static String CONCEPT_RELATION_FILE_NAME = "MRREL.RRF";
+	private final static String SEMANTIC_TYPE_FILE_NAME = "SemGroups.txt";
+	private final static String CONCEPT_SEMANTIC_TYPE_FILE_NAME = "MRSTY.RRF";
 
 	public static void main(String[] args) throws IOException, ParseException
 	{
@@ -38,10 +40,14 @@ public class Main
 					umlsInputFolder.getAbsolutePath() + File.separator + CONCEPT_HIERACHY_FILE_NAME);
 			File umlsConceptRelationFile = new File(
 					umlsInputFolder.getAbsolutePath() + File.separator + CONCEPT_RELATION_FILE_NAME);
+			File umlsSemanticTypeFile = new File(
+					umlsInputFolder.getAbsolutePath() + File.separator + SEMANTIC_TYPE_FILE_NAME);
+			File umlsConceptSemanticTypeFile = new File(
+					umlsInputFolder.getAbsolutePath() + File.separator + CONCEPT_SEMANTIC_TYPE_FILE_NAME);
 			UmlsConvertor umlsConvertor = cmd.hasOption("json_format") ? new UmlsToJsonConvertor()
 					: new UmlsToEmxConvertor();
 			umlsConvertor.convert(umlsOutputFolder, umlsConceptRelationFile, umlsConceptHierachyFile, umlsConceptFile,
-					includeAnnotation);
+					umlsSemanticTypeFile, umlsConceptSemanticTypeFile, includeAnnotation);
 		}
 		else
 		{

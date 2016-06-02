@@ -3,7 +3,9 @@ package umls2emx.convertor.io.convertors;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -18,7 +20,6 @@ import org.molgenis.data.support.MapEntity;
 import org.molgenis.data.support.UuidGenerator;
 import org.molgenis.ontology.core.meta.OntologyMetaData;
 import org.molgenis.ontology.core.meta.OntologyTermDynamicAnnotationMetaData;
-import org.molgenis.ontology.core.meta.OntologyTermMetaData;
 import org.molgenis.ontology.core.meta.OntologyTermNodePathMetaData;
 import org.molgenis.ontology.core.meta.OntologyTermSynonymMetaData;
 import org.molgenis.ontology.core.model.Ontology;
@@ -26,13 +27,20 @@ import org.molgenis.ontology.core.model.Ontology;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import umls2emx.convertor.beans.Synonym;
 import umls2emx.convertor.beans.UmlsAtom;
 import umls2emx.convertor.beans.UmlsConcept;
+import umls2emx.convertor.beans.UmlsConceptSemanticType;
 import umls2emx.convertor.beans.UmlsHierachicalRelation;
 import umls2emx.convertor.beans.UmlsRelation;
+import umls2emx.convertor.beans.UmlsSemanticType;
 import umls2emx.convertor.io.iterators.UmlsConceptHierachyIterator;
 import umls2emx.convertor.io.iterators.UmlsConceptIterator;
 import umls2emx.convertor.io.iterators.UmlsConceptRelationIterator;
+import umls2emx.convertor.io.iterators.UmlsConceptSemanticTypeIterator;
+import umls2emx.convertor.io.iterators.UmlsSemanticTypeIterator;
+import umls2emx.convertor.meta.OntologyTermMetaData;
+import umls2emx.convertor.meta.SemanticTypeMetaData;
 
 public class UmlsToEmxConvertor implements UmlsConvertor
 {
@@ -45,6 +53,7 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 
 	private final ListMultimap<String, String> relationLookUpTable;
 	private final ListMultimap<String, String> linkedMapForConceptToHierachy;
+	private final ListMultimap<String, String> linkedMapForConceptToSemanticType;
 	private final Ontology ontology;
 
 	public UmlsToEmxConvertor()
@@ -53,12 +62,14 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 		String generateId = idGenenrator.generateId();
 		relationLookUpTable = ArrayListMultimap.create();
 		linkedMapForConceptToHierachy = ArrayListMultimap.create();
+		linkedMapForConceptToSemanticType = ArrayListMultimap.create();
 		ontology = Ontology.create(generateId, UMLS_ONTOLOGY_NAME, UMLS_ONTOLOGY_NAME);
 	}
 
 	@Override
 	public void convert(File umlsOutputFolder, File umlsConceptRelationFile, File umlsConceptHierachyFile,
-			File umlsConceptFile, boolean includeAnnotation)
+			File umlsConceptFile, File umlsSemanticTypeFile, File umlsConceptSemanticTypeFile,
+			boolean includeAnnotation)
 	{
 		try
 		{
@@ -70,6 +81,8 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 			}
 
 			convertHierachyToOntologyNodePath(umlsConceptHierachyFile, umlsOutputFolder);
+
+			convertOntologyTermSemanticType(umlsSemanticTypeFile, umlsConceptSemanticTypeFile, umlsOutputFolder);
 
 			convertUmlsConceptsToOntologyTerms(umlsConceptFile, umlsOutputFolder);
 
@@ -131,20 +144,58 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 		System.out.println("---> Converted the UMLS hierachy file");
 	}
 
-	private void convertUmlsConceptsToOntologyTerms(File inputFile, File outputFolder) throws IOException
+	private void convertOntologyTermSemanticType(File umlsSemanticTypeFile, File umlsConceptSemanticTypeFile,
+			File umlsOutputFolder) throws IOException
+	{
+		System.out.println("---> Starting to convert the Semantic Type file");
+		CsvWriter semanticTypeCsvWriter = createCsvWriter(umlsOutputFolder, SemanticTypeMetaData.INSTANCE);
+		Set<String> validSemanticTypeIdentifiers = new HashSet<>();
+		UmlsSemanticTypeIterator umlsSemanticTypeIterator = new UmlsSemanticTypeIterator(umlsSemanticTypeFile);
+		while (umlsSemanticTypeIterator.hasNext())
+		{
+			UmlsSemanticType umlsSemanticType = umlsSemanticTypeIterator.next();
+			validSemanticTypeIdentifiers.add(umlsSemanticType.getIdentifier());
+			semanticTypeCsvWriter.add(convertUmlsSemanticTypeToEntity(umlsSemanticType));
+		}
+
+		umlsSemanticTypeIterator.close();
+		semanticTypeCsvWriter.close();
+
+		UmlsConceptSemanticTypeIterator umlsConceptSemanticTypeIterator = new UmlsConceptSemanticTypeIterator(
+				umlsConceptSemanticTypeFile, validSemanticTypeIdentifiers);
+		while (umlsConceptSemanticTypeIterator.hasNext())
+		{
+			UmlsConceptSemanticType umlsConceptSemanticType = umlsConceptSemanticTypeIterator.next();
+			linkedMapForConceptToSemanticType.putAll(umlsConceptSemanticType.getUmlsConceptId(),
+					umlsConceptSemanticType.getSemanticTypeIds());
+		}
+		umlsConceptSemanticTypeIterator.close();
+		System.out.println("---> Converted the Semantic Type file");
+	}
+
+	private Entity convertUmlsSemanticTypeToEntity(UmlsSemanticType umlsSemanticType)
+	{
+		MapEntity entity = new MapEntity(SemanticTypeMetaData.INSTANCE);
+		entity.set(SemanticTypeMetaData.ID, umlsSemanticType.getIdentifier());
+		entity.set(SemanticTypeMetaData.SEMANTIC_TYPE_NAME, umlsSemanticType.getSemanticTypeName());
+		entity.set(SemanticTypeMetaData.SEMANTIC_TYPE_GROUP, umlsSemanticType.getGroupName());
+		return entity;
+	}
+
+	private void convertUmlsConceptsToOntologyTerms(File umlsConceptFile, File outputFolder) throws IOException
 	{
 		System.out.println("---> Starting to convert the UMLS Concept file");
 		CsvWriter ontologyTermCsvWriter = createCsvWriter(outputFolder, OntologyTermMetaData.INSTANCE);
 
 		CsvWriter ontologyTermSynonymCsvWriter = createCsvWriter(outputFolder, OntologyTermSynonymMetaData.INSTANCE);
 
-		UmlsConceptIterator umlsConceptIterator = new UmlsConceptIterator(inputFile);
+		UmlsConceptIterator umlsConceptIterator = new UmlsConceptIterator(umlsConceptFile);
 
 		while (umlsConceptIterator.hasNext())
 		{
 			UmlsConcept umlsConcept = umlsConceptIterator.next();
 			ontologyTermCsvWriter.add(convertUmlsConceptToOntologyTermEntity(umlsConcept));
-			ontologyTermSynonymCsvWriter.add(umlsConcept.getConceptAtoms().stream()
+			ontologyTermSynonymCsvWriter.add(umlsConcept.getSynonyms().stream()
 					.map(this::convertUmlsConceptToOntologyTermSynonymEntity).collect(Collectors.toList()));
 		}
 
@@ -180,30 +231,33 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 	{
 		String cuiId = umlsConcept.getCuiId();
 		String preferredName = umlsConcept.getPreferredName();
-		List<String> atomIds = umlsConcept.getConceptAtoms().stream().map(UmlsAtom::getAtomId)
-				.collect(Collectors.toList());
+		List<String> synonymIds = umlsConcept.getSynonyms().stream().map(Synonym::getId).collect(Collectors.toList());
+		List<String> semanticTypeIds = linkedMapForConceptToSemanticType.containsKey(cuiId)
+				? linkedMapForConceptToSemanticType.get(cuiId) : Collections.emptyList();
+		List<String> annotationIds = relationLookUpTable.containsKey(cuiId) ? relationLookUpTable.get(cuiId)
+				: Collections.emptyList();
+
 		MapEntity entity = new MapEntity(OntologyTermMetaData.INSTANCE);
 		entity.set(OntologyTermMetaData.ID, cuiId);
 		entity.set(OntologyTermMetaData.ONTOLOGY, ontology.getId());
 		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_NAME, preferredName);
 		// TODO: replace the cuiId with a proper url if it's available
 		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_IRI, cuiId);
-
 		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_NODE_PATH,
 				concatenateListOfIds(linkedMapForConceptToHierachy.containsKey(cuiId)
 						? linkedMapForConceptToHierachy.get(cuiId) : Collections.emptyList()));
-		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_SYNONYM, concatenateListOfIds(atomIds));
-		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_DYNAMIC_ANNOTATION, concatenateListOfIds(
-				relationLookUpTable.containsKey(cuiId) ? relationLookUpTable.get(cuiId) : Collections.emptyList()));
+		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_SYNONYM, concatenateListOfIds(synonymIds));
+		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_SEMANTIC_TYPE, concatenateListOfIds(semanticTypeIds));
+		entity.set(OntologyTermMetaData.ONTOLOGY_TERM_DYNAMIC_ANNOTATION, concatenateListOfIds(annotationIds));
 		return entity;
 	}
 
-	private Entity convertUmlsConceptToOntologyTermSynonymEntity(UmlsAtom umlsAtom)
+	private Entity convertUmlsConceptToOntologyTermSynonymEntity(Synonym synonym)
 	{
-		String atomId = umlsAtom.getAtomId();
-		String atomName = umlsAtom.getAtomName();
+		String id = synonym.getId();
+		String atomName = synonym.getName();
 		MapEntity entity = new MapEntity(OntologyTermSynonymMetaData.INSTANCE);
-		entity.set(OntologyTermSynonymMetaData.ID, atomId);
+		entity.set(OntologyTermSynonymMetaData.ID, id);
 		entity.set(OntologyTermSynonymMetaData.ONTOLOGY_TERM_SYNONYM, atomName);
 		return entity;
 	}

@@ -118,5 +118,6 @@
     <module>snomedct2emx-convertor</module>
     <module>umls2emx-convertor</module>
     <module>sorta2emx-convertor</module>
+    <module>icd10ToEmxConverter</module>
   </modules>
 </project>

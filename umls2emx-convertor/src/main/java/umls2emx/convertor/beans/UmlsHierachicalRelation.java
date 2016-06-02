@@ -2,8 +2,6 @@ package umls2emx.convertor.beans;
 
 import java.util.List;
 
-import org.molgenis.umls.beans.AutoValue_UmlsHierachicalRelation;
-
 import com.google.auto.value.AutoValue;
 
 @AutoValue

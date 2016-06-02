@@ -1,7 +1,5 @@
 package umls2emx.convertor.beans;
 
-import org.molgenis.umls.beans.AutoValue_UmlsRelation;
-
 import com.google.auto.value.AutoValue;
 
 @AutoValue

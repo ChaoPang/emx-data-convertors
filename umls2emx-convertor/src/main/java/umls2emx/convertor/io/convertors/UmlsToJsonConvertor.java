@@ -25,7 +25,8 @@ public class UmlsToJsonConvertor implements UmlsConvertor
 
 	@Override
 	public void convert(File outputFolder, File umlsConceptRelationFile, File umlsConceptHierachyFile,
-			File umlsConceptFile, boolean includeAnnotation)
+			File umlsConceptFile, File umlsSemanticTypeFile, File umlsConceptSemanticTypeFile,
+			boolean includeAnnotation)
 	{
 		try
 		{
