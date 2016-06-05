@@ -1,5 +1,7 @@
 package umls2emx.convertor.io.convertors;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -27,7 +29,6 @@ import org.molgenis.ontology.core.model.Ontology;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import umls2emx.convertor.beans.Synonym;
 import umls2emx.convertor.beans.UmlsAtom;
 import umls2emx.convertor.beans.UmlsConcept;
 import umls2emx.convertor.beans.UmlsConceptSemanticType;
@@ -195,7 +196,7 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 		{
 			UmlsConcept umlsConcept = umlsConceptIterator.next();
 			ontologyTermCsvWriter.add(convertUmlsConceptToOntologyTermEntity(umlsConcept));
-			ontologyTermSynonymCsvWriter.add(umlsConcept.getSynonyms().stream()
+			ontologyTermSynonymCsvWriter.add(umlsConcept.getConceptAtoms().stream()
 					.map(this::convertUmlsConceptToOntologyTermSynonymEntity).collect(Collectors.toList()));
 		}
 
@@ -231,7 +232,7 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 	{
 		String cuiId = umlsConcept.getCuiId();
 		String preferredName = umlsConcept.getPreferredName();
-		List<String> synonymIds = umlsConcept.getSynonyms().stream().map(Synonym::getId).collect(Collectors.toList());
+		List<String> synonymIds = umlsConcept.getConceptAtoms().stream().map(UmlsAtom::getAtomId).collect(toList());
 		List<String> semanticTypeIds = linkedMapForConceptToSemanticType.containsKey(cuiId)
 				? linkedMapForConceptToSemanticType.get(cuiId) : Collections.emptyList();
 		List<String> annotationIds = relationLookUpTable.containsKey(cuiId) ? relationLookUpTable.get(cuiId)
@@ -252,10 +253,10 @@ public class UmlsToEmxConvertor implements UmlsConvertor
 		return entity;
 	}
 
-	private Entity convertUmlsConceptToOntologyTermSynonymEntity(Synonym synonym)
+	private Entity convertUmlsConceptToOntologyTermSynonymEntity(UmlsAtom umlsAtom)
 	{
-		String id = synonym.getId();
-		String atomName = synonym.getName();
+		String id = umlsAtom.getAtomId();
+		String atomName = umlsAtom.getAtomName();
 		MapEntity entity = new MapEntity(OntologyTermSynonymMetaData.INSTANCE);
 		entity.set(OntologyTermSynonymMetaData.ID, id);
 		entity.set(OntologyTermSynonymMetaData.ONTOLOGY_TERM_SYNONYM, atomName);
